@@ -1,181 +1,171 @@
 #include "pso.h"
 
-
-
-
-double custom_sqrt(double number) {
-   double guess = number / 2.0;
-   double epsilon = 0.00001;
-
-
-   if (number < 0) return -1; // Retorna -1 para valores negativos (não suportado)
-   while ((guess * guess - number) > epsilon || (number - guess * guess) > epsilon) {
-       guess = (guess + number / guess) / 2.0;
-   }
-   return guess;
+// Funções matemáticas customizadas
+double raiz_quadrada_personalizada(double numero) {
+    double chute = numero / 2.0;
+    double epsilon = 0.00001;
+    if (numero < 0) return -1;
+    while ((chute * chute - numero) > epsilon || (numero - chute * chute) > epsilon) {
+        chute = (chute + numero / chute) / 2.0;
+    }
+    return chute;
 }
 
-
-double custom_fabs(double number) {
-   return number < 0 ? -number : number;
+double valor_absoluto_personalizado(double numero) {
+    return numero < 0 ? -numero : numero;
 }
 
-
-double custom_sin(double x) {
-   // Aproximação por série de Taylor para x em radianos
-   double term = x;
-   double result = term;
-   int n = 1;
-   int sign = -1;
-
-
-   while (custom_fabs(term) > 0.00001) {
-       term *= x * x / ((2 * n) * (2 * n + 1));
-       result += sign * term;
-       sign *= -1;
-       n++;
-   }
-   return result;
+double seno_personalizado(double x) {
+    double termo = x, resultado = termo;
+    int n = 1, sinal = -1;
+    while (valor_absoluto_personalizado(termo) > 0.00001) {
+        termo *= x * x / ((2 * n) * (2 * n + 1));
+        resultado += sinal * termo;
+        sinal *= -1;
+        n++;
+    }
+    return resultado;
 }
 
-
-
-
-// Função objetivo (Eggholder function)
+// Função objetivo (Eggholder)
 double eggholder(double x, double y) {
-   return -(y + 47) * custom_sin(custom_sqrt(custom_fabs((x / 2) + y + 47))) - x * custom_sin(custom_sqrt(custom_fabs(x - (y + 47))));
+    return -(y + 47) * seno_personalizado(raiz_quadrada_personalizada(valor_absoluto_personalizado((x / 2) + y + 47))) - 
+           x * seno_personalizado(raiz_quadrada_personalizada(valor_absoluto_personalizado(x - (y + 47))));
 }
-
 
 // Inicializa o enxame
-void initializeSwarm(Swarm *swarm, int numParticles, int dimensions, double minPos, double maxPos, double maxVel) {
-   swarm->particles = (Particle *)malloc(numParticles * sizeof(Particle));
-   swarm->globalBestPosition = (double *)malloc(dimensions * sizeof(double));
-   swarm->globalBestFitness = INFINITY;
-   swarm->numParticles = numParticles;
-   swarm->dimensions = dimensions;
+void inicializarEnxame(Swarm *enxame, int numParticulas, int dimensoes, double posMin, double posMax, double velMax) {
+    enxame->particles = (Particle *)malloc(numParticulas * sizeof(Particle));
+    enxame->globalBestPosition = (double *)malloc(dimensoes * sizeof(double));
+    enxame->globalBestFitness = DBL_MAX;
+    enxame->numParticles = numParticulas;
+    enxame->dimensions = dimensoes;
 
+    for (int i = 0; i < numParticulas; i++) {
+        Particle *p = &enxame->particles[i];
+        p->position = (double *)malloc(dimensoes * sizeof(double));
+        p->velocity = (double *)malloc(dimensoes * sizeof(double));
+        p->bestPosition = (double *)malloc(dimensoes * sizeof(double));
+        p->fitness = DBL_MAX;
+        p->bestFitness = DBL_MAX;
 
-   for (int i = 0; i < numParticles; i++) {
-       Particle *p = &swarm->particles[i];
-       p->position = (double *)malloc(dimensions * sizeof(double));
-       p->velocity = (double *)malloc(dimensions * sizeof(double));
-       p->bestPosition = (double *)malloc(dimensions * sizeof(double));
-       p->fitness = INFINITY;
-       p->bestFitness = INFINITY;
-
-
-       for (int d = 0; d < dimensions; d++) {
-           p->position[d] = minPos + (maxPos - minPos) * ((double)rand() / RAND_MAX);
-           p->velocity[d] = -maxVel + 2 * maxVel * ((double)rand() / RAND_MAX);
-           p->bestPosition[d] = p->position[d];
-       }
-   }
+        for (int d = 0; d < dimensoes; d++) {
+            p->position[d] = posMin + (posMax - posMin) * ((double)rand() / RAND_MAX);
+            p->velocity[d] = -velMax + 2 * velMax * ((double)rand() / RAND_MAX);
+            p->bestPosition[d] = p->position[d];
+        }
+    }
 }
 
-
-// Avalia a aptidão de uma partícula
-double evaluateFitness(double *position) {
-   return eggholder(position[0], position[1]);
+// Avalia a aptidão
+double avaliarAptidao(double *posicao) {
+    return eggholder(posicao[0], posicao[1]);
 }
 
-
-// Atualiza a velocidade
-void updateVelocity(Particle *particle, double *globalBestPosition, int dimensions, double w, double c1, double c2) {
-   for (int d = 0; d < dimensions; d++) {
-       double r1 = (double)rand() / RAND_MAX;
-       double r2 = (double)rand() / RAND_MAX;
-
-
-       particle->velocity[d] = w * particle->velocity[d]
-           + c1 * r1 * (particle->bestPosition[d] - particle->position[d])
-           + c2 * r2 * (globalBestPosition[d] - particle->position[d]);
-   }
+// Atualiza velocidade
+void atualizarVelocidade(Particle *particula, double *globalBestPosition, int dimensoes, double w, double c1, double c2) {
+    for (int d = 0; d < dimensoes; d++) {
+        double r1 = (double)rand() / RAND_MAX;
+        double r2 = (double)rand() / RAND_MAX;
+        particula->velocity[d] = w * particula->velocity[d] +
+                                 c1 * r1 * (particula->bestPosition[d] - particula->position[d]) +
+                                 c2 * r2 * (globalBestPosition[d] - particula->position[d]);
+    }
 }
 
-
-// Atualiza a posição
-void updatePosition(Particle *particle, double minPos, double maxPos, int dimensions) {
-   for (int d = 0; d < dimensions; d++) {
-       particle->position[d] += particle->velocity[d];
-
-
-       if (particle->position[d] < minPos) {
-           particle->position[d] = minPos;
-           particle->velocity[d] = 0;
-       } else if (particle->position[d] > maxPos) {
-           particle->position[d] = maxPos;
-           particle->velocity[d] = 0;
-       }
-   }
+// Atualiza posição
+void atualizarPosicao(Particle *particula, double posMin, double posMax, int dimensoes) {
+    for (int d = 0; d < dimensoes; d++) {
+        particula->position[d] += particula->velocity[d];
+        if (particula->position[d] < posMin) {
+            particula->position[d] = posMin;
+            particula->velocity[d] = 0;
+        } else if (particula->position[d] > posMax) {
+            particula->position[d] = posMax;
+            particula->velocity[d] = 0;
+        }
+    }
 }
 
-
-// Atualiza as melhores posições
-void updateBestPositions(Swarm *swarm) {
-   for (int i = 0; i < swarm->numParticles; i++) {
-       Particle *p = &swarm->particles[i];
-       p->fitness = evaluateFitness(p->position);
-
-
-       if (p->fitness < p->bestFitness) {
-           p->bestFitness = p->fitness;
-           for (int d = 0; d < swarm->dimensions; d++) {
-               p->bestPosition[d] = p->position[d];
-           }
-       }
-
-
-       if (p->fitness < swarm->globalBestFitness) {
-           swarm->globalBestFitness = p->fitness;
-           for (int d = 0; d < swarm->dimensions; d++) {
-               swarm->globalBestPosition[d] = p->position[d];
-           }
-       }
-   }
+// Atualiza melhores posições
+void atualizarMelhoresPosicoes(Swarm *enxame) {
+    for (int i = 0; i < enxame->numParticles; i++) {
+        Particle *p = &enxame->particles[i];
+        p->fitness = avaliarAptidao(p->position);
+        if (p->fitness < p->bestFitness) {
+            p->bestFitness = p->fitness;
+            for (int d = 0; d < enxame->dimensions; d++) {
+                p->bestPosition[d] = p->position[d];
+            }
+        }
+        if (p->fitness < enxame->globalBestFitness) {
+            enxame->globalBestFitness = p->fitness;
+            for (int d = 0; d < enxame->dimensions; d++) {
+                enxame->globalBestPosition[d] = p->position[d];
+            }
+        }
+    }
 }
 
-
-// Executa o PSO
-void runPSO(Swarm *swarm, int iterations, double w, double c1, double c2, double minPos, double maxPos) {
-   for (int iter = 0; iter < iterations; iter++) {
-       for (int i = 0; i < swarm->numParticles; i++) {
-           Particle *p = &swarm->particles[i];
-           updateVelocity(p, swarm->globalBestPosition, swarm->dimensions, w, c1, c2);
-           updatePosition(p, minPos, maxPos, swarm->dimensions);
-       }
-       updateBestPositions(swarm);
-       printf("Iteration %d: Best Fitness = %lf\n", iter, swarm->globalBestFitness);
-   }
+// Executa PSO
+double executarPSO(Swarm *enxame, int iteracoes, double w, double c1, double c2, double posMin, double posMax) {
+    for (int iter = 0; iter < iteracoes; iter++) {
+        for (int i = 0; i < enxame->numParticles; i++) {
+            Particle *p = &enxame->particles[i];
+            atualizarVelocidade(p, enxame->globalBestPosition, enxame->dimensions, w, c1, c2);
+            atualizarPosicao(p, posMin, posMax, enxame->dimensions);
+        }
+        atualizarMelhoresPosicoes(enxame);
+    }
+    return enxame->globalBestFitness;
 }
 
+// Calcula média
+double calcularMedia(double *resultados, int tamanho) {
+    double soma = 0.0;
+    for (int i = 0; i < tamanho; i++) {
+        soma += resultados[i];
+    }
+    return soma / tamanho;
+}
 
+// Calcula desvio padrão
+double calcularDesvioPadrao(double *resultados, int tamanho, double media) {
+    double soma = 0.0;
+    for (int i = 0; i < tamanho; i++) {
+        soma += (resultados[i] - media) * (resultados[i] - media);
+    }
+    return raiz_quadrada_personalizada(soma / tamanho);
+}
+
+// Função principal
 int main() {
-   srand(time(NULL));
+    srand(time(NULL));
+    int iteracoes[] = {20, 50, 100};
+    int populacoes[] = {50, 100};
+    FILE *arquivo = fopen("resultados.txt", "w");
 
-
-   int numParticles = 50;
-   int dimensions = 2;
-   double minPos = -512, maxPos = 512, maxVel = 77;
-   double w = 0.5, c1 = 1.5, c2 = 1.5;
-   int iterations = 100;
-
-
-   Swarm swarm;
-   initializeSwarm(&swarm, numParticles, dimensions, minPos, maxPos, maxVel);
-   runPSO(&swarm, iterations, w, c1, c2, minPos, maxPos);
-
-
-   // Liberar memória
-   for (int i = 0; i < numParticles; i++) {
-       free(swarm.particles[i].position);
-       free(swarm.particles[i].velocity);
-       free(swarm.particles[i].bestPosition);
-   }
-   free(swarm.particles);
-   free(swarm.globalBestPosition);
-
-
-   return 0;
+    for (int p = 0; p < 2; p++) {
+        for (int iter = 0; iter < 3; iter++) {
+            double resultados[10];
+            for (int execucao = 0; execucao < 10; execucao++) {
+                Swarm enxame;
+                inicializarEnxame(&enxame, populacoes[p], 2, -512, 512, 77);
+                resultados[execucao] = executarPSO(&enxame, iteracoes[iter], 0.5, 1.5, 1.5, -512, 512);
+                free(enxame.globalBestPosition);
+                for (int i = 0; i < populacoes[p]; i++) {
+                    free(enxame.particles[i].position);
+                    free(enxame.particles[i].velocity);
+                    free(enxame.particles[i].bestPosition);
+                }
+                free(enxame.particles);
+            }
+            double media = calcularMedia(resultados, 10);
+            double desvioPadrao = calcularDesvioPadrao(resultados, 10, media);
+            fprintf(arquivo, "Populacao: %d, Iteracoes: %d, Melhor: %.6f, Media: %.6f, DesvioPadrao: %.6f\n",
+                    populacoes[p], iteracoes[iter], resultados[0], media, desvioPadrao);
+        }
+    }
+    fclose(arquivo);
+    return 0;
 }
-
