@@ -1,7 +1,7 @@
 #include "pso.h"
 
 // Funções matemáticas customizadas
-double raiz_quadrada_personalizada(double numero) {
+double raizQuadradaPersonalizada(double numero) {
     double chute = numero / 2.0;
     double epsilon = 0.00001;
     if (numero < 0) return -1;
@@ -11,14 +11,14 @@ double raiz_quadrada_personalizada(double numero) {
     return chute;
 }
 
-double valor_absoluto_personalizado(double numero) {
+double valorAbsolutoPersonalizado(double numero) {
     return numero < 0 ? -numero : numero;
 }
 
-double seno_personalizado(double x) {
+double senoPersonalizado(double x) {
     double termo = x, resultado = termo;
     int n = 1, sinal = -1;
-    while (valor_absoluto_personalizado(termo) > 0.00001) {
+    while (valorAbsolutoPersonalizado(termo) > 0.00001) {
         termo *= x * x / ((2 * n) * (2 * n + 1));
         resultado += sinal * termo;
         sinal *= -1;
@@ -29,8 +29,8 @@ double seno_personalizado(double x) {
 
 // Função objetivo (Eggholder)
 double eggholder(double x, double y) {
-    return -(y + 47) * seno_personalizado(raiz_quadrada_personalizada(valor_absoluto_personalizado((x / 2) + y + 47))) - 
-           x * seno_personalizado(raiz_quadrada_personalizada(valor_absoluto_personalizado(x - (y + 47))));
+    return -(y + 47) * senoPersonalizado(raizQuadradaPersonalizada(valorAbsolutoPersonalizado((x / 2) + y + 47))) - 
+           x * senoPersonalizado(raizQuadradaPersonalizada(valorAbsolutoPersonalizado(x - (y + 47))));
 }
 
 // Inicializa o enxame
@@ -135,7 +135,7 @@ double calcularDesvioPadrao(double *resultados, int tamanho, double media) {
     for (int i = 0; i < tamanho; i++) {
         soma += (resultados[i] - media) * (resultados[i] - media);
     }
-    return raiz_quadrada_personalizada(soma / tamanho);
+    return raizQuadradaPersonalizada(soma / tamanho);
 }
 
 // Função principal
