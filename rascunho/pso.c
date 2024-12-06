@@ -145,7 +145,7 @@ int main() {
     int populacoes[] = {50, 100};
     FILE *arquivo = fopen("resultados.txt", "w");
 
-    for (int p = 0; p < 2; p++) {
+    for (int p = 0; p < 5; p++) {
         for (int iter = 0; iter < 3; iter++) {
             double resultados[10];
             for (int execucao = 0; execucao < 10; execucao++) {
